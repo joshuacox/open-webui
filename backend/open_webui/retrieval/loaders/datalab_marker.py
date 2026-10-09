@@ -7,6 +7,7 @@ from typing import List, Optional
 import requests
 from fastapi import HTTPException, status
 from langchain_core.documents import Document
+from open_webui.env import DATA_DIR
 from open_webui.utils.json_codec import JSONCodec
 
 log = logging.getLogger(__name__)
@@ -208,8 +209,7 @@ class DatalabMarkerLoader:
                 detail='Marker returned empty content',
             )
 
-        marker_output_dir = os.path.join('/app/backend/data/uploads', 'marker_output')
-        os.makedirs(marker_output_dir, exist_ok=True)
+        marker_output_dir = os.path.join(DATA_DIR, 'uploads', 'marker_output')
 
         file_ext_map = {'markdown': 'md', 'json': 'json', 'html': 'html'}
         file_ext = file_ext_map.get(self.output_format.lower(), 'txt')
@@ -217,6 +217,7 @@ class DatalabMarkerLoader:
         output_path = os.path.join(marker_output_dir, output_filename)
 
         try:
+            os.makedirs(marker_output_dir, exist_ok=True)
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(full_text)
             log.info('Saved Marker output to: %s', output_path)
