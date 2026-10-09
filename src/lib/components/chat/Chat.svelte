@@ -4471,6 +4471,23 @@
 	// chatIdProp is empty for chats started from the home page (URL set via replaceState)
 	const getDraftChatId = () => chatIdProp || $chatId || null;
 
+	// A home-started chat has no id while its first draft is written, so the
+	// draft lands under the unsuffixed 'chat-input' key — but returning to the
+	// chat reads 'chat-input-<id>', misses, and setDefaults() wipes the
+	// per-chat tool/skill/filter/feature selections. Once the chat's id is
+	// known, move the unsuffixed draft to the chat's own key (#32084).
+	const migrateDraftToChat = (id: string) => {
+		const draft = sessionStorage.getItem('chat-input');
+		if (draft) {
+			sessionStorage.setItem(`chat-input-${id}`, draft);
+			sessionStorage.removeItem('chat-input');
+		}
+	};
+
+	$: if ($chatId && !chatIdProp && !$temporaryChatEnabled) {
+		migrateDraftToChat($chatId);
+	}
+
 	const getChatInputDraft = () => ({
 		prompt,
 		files: files
