@@ -46,6 +46,18 @@
 	let lastVisualFrequency = 'DAILY';
 	let prevFrequency = 'DAILY';
 
+	// Schedule end carried over from the parsed RRULE (COUNT and UNTIL are
+	// mutually exclusive). The visual editor has no fields for these, but an
+	// edit must not silently drop them.
+	let endCount: number | null = null;
+	let endUntil: string | null = null;
+
+	const endParts = (): string[] => {
+		if (endCount !== null) return [`COUNT=${endCount}`];
+		if (endUntil !== null) return [`UNTIL=${endUntil}`];
+		return [];
+	};
+
 	$: if (frequency !== 'CUSTOM') {
 		lastVisualFrequency = frequency;
 	}
@@ -80,6 +92,7 @@
 			parts.push(`BYHOUR=${hour}`);
 		}
 		parts.push(`BYMINUTE=${minute}`);
+		parts.push(...endParts());
 		return `RRULE:${parts.join(';')}`;
 	};
 
@@ -101,10 +114,13 @@
 			parts.push(`BYHOUR=${hour}`);
 		}
 		parts.push(`BYMINUTE=${minute}`);
+		parts.push(...endParts());
 		return `RRULE:${parts.join(';')}`;
 	};
 
 	export const parseRrule = (s: string) => {
+		endCount = null;
+		endUntil = null;
 		const match = s.match(/DTSTART[^:]*:(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/i);
 		// Detect ONCE (COUNT=1 with DTSTART)
 		if (/COUNT=1(?!\d)/.test(s)) {
@@ -138,6 +154,8 @@
 		minute = parseInt(parts.BYMINUTE || match?.[5] || '0');
 		selectedDays = parts.BYDAY ? parts.BYDAY.split(',') : [];
 		monthDay = parseInt(parts.BYMONTHDAY || '1');
+		endCount = parts.COUNT ? parseInt(parts.COUNT) : null;
+		endUntil = parts.COUNT ? null : (parts.UNTIL ?? null);
 	};
 
 	export const getScheduleLabel = (): string => {
